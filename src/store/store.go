@@ -3,6 +3,9 @@ package store
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"sync"
 )
 
 // Backend holds the data about a server
@@ -37,6 +40,21 @@ type ServerPool struct {
 // AddBackend to the server pool
 func (s *ServerPool) AddBackend(backend *Backend) {
 	s.backends = append(s.backends, backend)
+}
+
+func createBackend(backendUrl string) {
+	serverUrl, err := url.Parse(backendUrl)
+	if err != nil {
+		return err
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(serverUrl)
+
+	return &Backend{
+		URL:          serverUrl,
+		Alive:        true,
+		ReverseProxy: proxy,
+	}
 }
 
 // NextIndex atomically increase the counter and return an index
